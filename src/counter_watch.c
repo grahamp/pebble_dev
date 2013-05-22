@@ -18,8 +18,8 @@ enum {
 
 #define MY_UUID {0xEC, 0x7E, 0xE5, 0xC6, 0x8D, 0xDF, 0x40, 0x89, 0xAA, 0x84, 0xC3, 0x39, 0x6A, 0x11, 0xCC, 0x99}
 PBL_APP_INFO(MY_UUID,
-             "Counter 2.3", "Pebble",
-             3, 0, /* App version */
+             "Counter 3.5", "Pebble",
+             3, 5, /* App version */
              DEFAULT_MENU_ICON,
              APP_INFO_STANDARD_APP);
 
@@ -27,7 +27,7 @@ Window window;
 TextLayer timeLayer;
 static bool callbacks_registered;
 static AppMessageCallbacksNode app_callbacks;
-static uint8_t count=0;
+static int count=0;
 static int  pebble_counter_error_state=0; 
 //static unsigned int count_buffer_size=32;
 static char count_text[32];
@@ -78,9 +78,10 @@ bool register_callbacks() {
 	return callbacks_registered;
 }
 
-static void send_cmd(uint8_t cmd) {
-  Tuplet value = TupletInteger(CMD_KEY, count);
-  
+static void send_count() {
+  Tuplet value = TupletInteger(COUNT_KEY, count);
+  PblTm currentTime;
+  get_time(&currentTime);
   DictionaryIterator *iter;
   app_message_out_get(&iter);
   
@@ -97,18 +98,25 @@ static void send_cmd(uint8_t cmd) {
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
   (void)recognizer;
   (void)window;
-  count--;
+  count++;
   updateDisplay();
-  send_cmd(CMD_UP);
+ 
 }
 
 void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
   (void)recognizer;
   (void)window;
-  count++;
+  count--;
   updateDisplay();
-  send_cmd(CMD_DOWN);
+  
 }
+void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  (void)recognizer;
+  (void)window;
+   updateDisplay();
+   send_count();
+}
+
 
 void click_config_provider(ClickConfig **config, Window *window) {
   (void)window;
@@ -118,6 +126,9 @@ void click_config_provider(ClickConfig **config, Window *window) {
   
   config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
   config[BUTTON_ID_DOWN]->click.repeat_interval_ms = 100;
+	
+  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
+
 }
 
 void handle_second_tick(AppContextRef ctx, PebbleTickEvent *t) {
